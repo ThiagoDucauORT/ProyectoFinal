@@ -1,0 +1,15 @@
+# Dependencias que se instalan por PIP (dentro del venv con --system-site-packages).
+#
+# OJO: picamera2, gpiozero, lgpio y las herramientas del IMX500 se instalan
+# por APT (ver README), NO por pip, porque son paquetes del sistema de
+# Raspberry Pi OS. Por eso el venv se crea con --system-site-packages.
+#
+# Acá solo van las librerías puras de Python que sí van por pip:
+
+qrcode[pil]      # generación de QR (arrastra Pillow)
+numpy            # manejo de los tensores de salida del IMX500
+
+# opencv-python es OPCIONAL: solo para la ventana de prueba del QR.
+# Si vas a correr headless (SSH sin entorno gráfico), podés no instalarlo
+# y poner DISPLAY_MOSTRAR_VENTANA_QR = False en config.py.
+opencv-python

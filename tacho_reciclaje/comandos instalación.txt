@@ -1,0 +1,21 @@
+sudo apt update && sudo apt full-upgrade -y
+sudo apt install -y imx500-all imx500-tools
+sudo apt install -y python3-picamera2 rpicam-apps
+sudo apt install -y python3-gpiozero python3-lgpio
+sudo apt install -y git python3-venv python3-pip
+sudo reboot
+
+
+
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+
+
+pip install --upgrade pip
+pip install -r requirements.txt
+
+
+python main.py
+
+
+
