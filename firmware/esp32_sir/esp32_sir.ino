@@ -1,8 +1,3 @@
-/*
- * ESP32 clásico + Arduino-ESP32 3.x + ESP32Servo.
- * UART2 para la Raspberry; Serial USB queda disponible para diagnóstico.
- * Abrir esta carpeta en Arduino IDE y adaptar config.h antes de cargar.
- */
 #include <Arduino.h>
 #include <ESP32Servo.h>
 #include <ctype.h>
