@@ -1,8 +1,3 @@
-/*
- * ESP32 clásico + Arduino-ESP32 3.x + ESP32Servo.
- * UART2 para la Raspberry; Serial USB queda disponible para diagnóstico.
- * Abrir esta carpeta en Arduino IDE y adaptar config.h antes de cargar.
- */
 #include <Arduino.h>
 #include <ESP32Servo.h>
 #include <ctype.h>
@@ -78,22 +73,25 @@ void comando(char* texto, uint32_t ahora) {
   }
 }
 
-float distanciaCM() {
-  digitalWrite(TRIGGER_PIN, LOW);
+float distanciaCM(int triggerPin, int echoPin) {
+  digitalWrite(triggerPin, LOW);
   delayMicroseconds(2);
-  digitalWrite(TRIGGER_PIN, HIGH);
+  digitalWrite(triggerPin, HIGH);
   delayMicroseconds(10);
-  digitalWrite(TRIGGER_PIN, LOW);
-  unsigned long duracion = pulseIn(ECHO_PIN, HIGH, ECO_TIMEOUT_US);
+  digitalWrite(triggerPin, LOW);
+  unsigned long duracion = pulseIn(echoPin, HIGH, ECO_TIMEOUT_US);
   return duracion ? duracion * 0.0343f / 2.0f : NAN;
 }
 
 void setup() {
   Serial.begin(BAUDRATE);
   enlace.begin(BAUDRATE, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
-  pinMode(TRIGGER_PIN, OUTPUT);
-  digitalWrite(TRIGGER_PIN, LOW);
-  pinMode(ECHO_PIN, INPUT);
+  pinMode(TRIGGER_PIN_1, OUTPUT);
+  digitalWrite(TRIGGER_PIN_1, LOW);
+  pinMode(ECHO_PIN_1, INPUT);
+  pinMode(TRIGGER_PIN_2, OUTPUT);
+  digitalWrite(TRIGGER_PIN_2, LOW);
+  pinMode(ECHO_PIN_2, INPUT);
   compuerta.setPeriodHertz(50);
   compuerta.attach(SERVO_PIN, SERVO_MIN_US, SERVO_MAX_US);
   if (!compuerta.attached()) {
@@ -129,10 +127,13 @@ void loop() {
   }
   if (ciclo.medir() && ahora - ultimaMuestra >= MUESTREO_MS) {
     ultimaMuestra = ahora;
-    float cm = distanciaCM();  // espera acotada a 25 ms, no segundos
+    // Medir secuencialmente para reducir interferencia entre ecos.
+    float cm1 = distanciaCM(TRIGGER_PIN_1, ECHO_PIN_1);
+    delay(5);
+    float cm2 = distanciaCM(TRIGGER_PIN_2, ECHO_PIN_2);
     ahora = millis();
-    ciclo.actualizar(ahora);   // timeout tiene prioridad sobre la lectura
-    ciclo.muestra(cm, ahora);
+    ciclo.actualizar(ahora);   // timeout tiene prioridad sobre las lecturas
+    ciclo.muestra(cm1, cm2, ahora);
   }
   delay(1);
 }
