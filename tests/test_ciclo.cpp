@@ -27,8 +27,8 @@ int main() {
     assert(c.autorizar(0));
     assert(!c.autorizar(0));
     assert(movimientos.empty());  // reconocer nunca abre
-    c.muestra(5, 5, 70); c.muestra(5, 5, 140); c.muestra(5, 5, 210);
-    assert(movimientos.empty());  // el ruido reinicia la estabilidad
+    c.muestra(5, 5, 70); c.muestra(7, 5, 140); c.muestra(5, 5, 210);
+    assert(movimientos.empty());  // un sensor >6 cm reinicia la estabilidad
     presencia(c, 280);
     assert(movimientos == std::vector<bool>{true});
     c.muestra(30, 30, 500);           // ignorar lectura durante movimiento
