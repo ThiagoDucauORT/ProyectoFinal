@@ -173,7 +173,7 @@ PREVIEW_MODO = "QTGL"
 # True simula solo el ESP32; cámara y generación de QR siguen siendo reales.
 # Para usar la placa, cargar el firmware y cambiar a False.
 # No existe fallback automático a simulación si falla la comunicación real.
-ESP32_SIMULACION = True
+ESP32_SIMULACION = False
 ESP32_PUERTO = "/dev/serial0"     # UART GPIO de la Pi, NO USB por defecto
 ESP32_BAUDRATE = 115200           # debe coincidir con config.h del ESP32
 ESP32_TIMEOUT_INICIO = 8.0       # handshake HELLO / READY
@@ -181,3 +181,19 @@ ESP32_INTERVALO_PING = 0.5
 ESP32_TIMEOUT_RESPUESTA = 3.0
 ESP32_TIMEOUT_CICLO = 20.0       # mayor que presencia + paso + movimientos
 PAUSA_ENTRE_CICLOS = 2.0         # pausa temporal, sin comprobar con la cámara
+
+
+# ==========================================================================
+# 9. DISPLAY FISICO ILI9488 (3.5", SPI)
+# ==========================================================================
+# Interfaz SPI0: SCK=GPIO11, MOSI=GPIO10, MISO=GPIO9, CS=GPIO8 (CE0).
+# DC y RESET son GPIO BCM. La pantalla táctil no se inicializa todavía:
+# necesita conocer el controlador y los pines T_CS/T_IRQ/T_CLK/T_DIN/T_DO.
+DISPLAY_HABILITADO = True
+DISPLAY_SPI_PORT = 0
+DISPLAY_SPI_DEVICE = 0
+DISPLAY_DC_PIN = 25
+DISPLAY_RESET_PIN = 17
+DISPLAY_ROTACION = 1          # 1 = orientación vertical para panel 320x480
+DISPLAY_BGR = False
+DISPLAY_QR_SEGUNDOS = 8
