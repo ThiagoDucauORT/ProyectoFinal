@@ -55,16 +55,18 @@ class Ciclo {
     }
   }
 
-  void muestra(float cm, uint32_t ahora) {
+  void muestra(float cm1, float cm2, uint32_t ahora) {
     if (!medir()) return;
     // Un eco faltante/invalidado NO cuenta como ausencia.
-    if (!isfinite(cm) || cm < 2.0f || cm > 400.0f) {
+    if (!lecturaValida(cm1) || !lecturaValida(cm2)) {
       estables_ = 0;
       if (++errores_ >= ERRORES_SENSOR_MAX) cerrar("ERROR_SENSOR", ahora);
       return;
     }
     errores_ = 0;
-    bool cumple = fase_ == Fase::PRESENCIA ? cm <= PRESENCIA_CM : cm >= AUSENCIA_CM;
+    bool cumple = fase_ == Fase::PRESENCIA
+        ? (cm1 <= PRESENCIA_CM && cm2 <= PRESENCIA_CM)
+        : (cm1 >= AUSENCIA_CM && cm2 >= AUSENCIA_CM);
     estables_ = cumple ? estables_ + 1 : 0;
     if (estables_ < MUESTRAS_ESTABLES) return;
     estables_ = 0;
@@ -79,6 +81,10 @@ class Ciclo {
   }
 
  private:
+  bool lecturaValida(float cm) const {
+    return isfinite(cm) && cm >= 2.0f && cm <= 400.0f;
+  }
+
   void cerrar(const char* resultado, uint32_t ahora) {
     // CANCEL puede invalidar un éxito aún pendiente de completar el cierre.
     resultado_ = resultado;
