@@ -56,8 +56,8 @@ def _obtener_display():
         )
         _device = ili9488(
             interfaz,
-            width=320,
-            height=480,
+            width=480,
+            height=320,
             rotate=getattr(config, "DISPLAY_ROTACION", 0),
             bgr=getattr(config, "DISPLAY_BGR", False),
         )
