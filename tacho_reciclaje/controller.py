@@ -32,6 +32,8 @@ class Controller:
         self._frames_validos_seguidos = 0
         self._clase_candidata = None
         self._fin_pausa = 0
+        self._qr_en_pantalla = False
+        self._fin_qr = 0
 
     def procesar_frame(self):
         # Primero Serial; si la cámara bloquea la Pi, el ESP32 limita los tiempos.
@@ -52,8 +54,15 @@ class Controller:
                 self.display.mostrar_mensaje(f"ERROR generando QR: {error}")
                 self._terminar_ciclo()
         elif self.estado == Estado.MOSTRAR_QR:
-            self.display.mostrar_qr(self._ruta_qr_actual)
-            self._terminar_ciclo()
+            # Mostrar el QR sin bloquear el bucle: el ESP32 sigue recibiendo
+            # PING mientras el código permanece visible.
+            if not self._qr_en_pantalla:
+                self.display.mostrar_qr(self._ruta_qr_actual)
+                self._qr_en_pantalla = True
+                self._fin_qr = self._reloj() + getattr(config, "DISPLAY_QR_SEGUNDOS", 8.0)
+            elif self._reloj() >= self._fin_qr:
+                self._qr_en_pantalla = False
+                self._terminar_ciclo()
         elif self.estado == Estado.PAUSA and self._reloj() >= self._fin_pausa:
             self.display.mostrar_mensaje("Listo. Esperando otro objeto.")
             self.estado = Estado.ESPERANDO_OBJETO
@@ -99,6 +108,7 @@ class Controller:
                 raise ErrorESP32("El ESP32 está ocupado; reiniciá el programa.")
 
     def _terminar_ciclo(self):
+        self._qr_en_pantalla = False
         self.tipo_objeto_actual = None
         self.nombre_clase_actual = None
         self._clase_candidata = None
