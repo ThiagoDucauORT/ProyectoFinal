@@ -14,3 +14,6 @@ pyserial>=3.5,<4  # Raspberry <-> ESP32 por UART
 # Si vas a correr headless (SSH sin entorno gráfico), podés no instalarlo
 # y poner DISPLAY_MOSTRAR_VENTANA_QR = False en config.py.
 opencv-python
+
+# Driver SPI para el display ILI9488 de 3.5 pulgadas.
+luma.lcd>=2.11,<3
