@@ -5,7 +5,7 @@
 // No son los GPIO de la Raspberry. UART2 no está disponible en todos los ESP32.
 constexpr int UART_RX_PIN = 16;
 constexpr int UART_TX_PIN = 17;
-constexpr int SERVO_PIN = 18;
+constexpr int SERVO_PIN = 23;
 constexpr int TRIGGER_PIN = 25;
 constexpr int ECHO_PIN = 26;  // ECHO HC-SR04 adaptado a 3.3 V en hardware
 constexpr uint32_t BAUDRATE = 115200;
