@@ -1,6 +1,8 @@
 # Tacho Inteligente de Reciclaje — Software Embebido
 
-Software que corre en una **Raspberry Pi 4 (8GB)** con **Raspberry Pi AI Camera (Sony IMX500)**, servos reales y sensor HC-SR04. Detecta un objeto reciclable, abre una compuerta, confirma el depósito con el ultrasónico y genera un QR de prueba.
+Software del SIR: **Raspberry Pi 4 + AI Camera (IMX500)** para reconocimiento y QR, y **ESP32** para servo y HC-SR04. El único sensor está antes de la compuerta. El servo abre después de reconocer la botella **y confirmar presencia física**; tras presencia → ausencia estable, cierra y se genera un QR por **posible depósito**. La cámara no comprueba desaparición.
+
+**Configuración inicial: `ESP32_SIMULACION = True`.** Para cargar el firmware, configurar UART y probar la placa, seguir [ESP32.md](ESP32.md). Incluye cómo volver atrás.
 
 ---
 
@@ -13,8 +15,10 @@ tacho_reciclaje/
 ├── camera.py            # IMX500 + Picamera2: inicializa el sensor y entrega detecciones crudas
 ├── detector.py          # interpreta las salidas del IMX500 -> class_id, nombre, confianza, bbox
 ├── controller.py        # máquina de estados: la lógica del tacho
-├── servo.py             # control REAL de servos (gpiozero + lgpio)
-├── distance_sensor.py   # control REAL del HC-SR04 (gpiozero)
+├── esp32.py             # enlace UART con ESP32 y simulador
+├── probar_esp32.py      # ensayo de un ciclo sin cámara ni QR
+├── servo.py             # control GPIO anterior, conservado como referencia
+├── distance_sensor.py   # sensor GPIO anterior, conservado como referencia
 ├── qr.py                # generación REAL del QR
 ├── display.py           # interfaz con el futuro display (hoy: consola + ventana QR)
 ├── assets/
@@ -32,7 +36,8 @@ tacho_reciclaje/
 | Captura de imagen | IMX500 (sensor) |
 | **Inferencia de la red neuronal** | **IMX500 (sensor)** ← lo pesado |
 | Interpretar tensores de salida | Raspberry Pi (CPU, liviano) |
-| Máquina de estados, servos, sensor, QR | Raspberry Pi (CPU) |
+| Decisiones de reconocimiento, display y QR | Raspberry Pi (CPU) |
+| Presencia/ausencia, servo y tiempos físicos | ESP32 |
 
 Esta es la ventaja clave de la AI Camera: la Pi queda casi libre porque la red corre dentro del sensor.
 
@@ -122,41 +127,35 @@ python imx500_object_detection_demo.py \
   --model /usr/share/imx500-models/imx500_network_ssd_mobilenetv2_fpnlite_320x320_pp.rpk
 ```
 
-### Servos
-Con el proyecto instalado, un test rápido en Python:
+### Servo y sensor ahora conectados al ESP32
+
+Ver [ESP32.md](ESP32.md) para pines de ejemplo, firmware Arduino, UART y
+pruebas reales. Los comandos de los módulos `servo.py` y
+`distance_sensor.py` corresponden al montaje GPIO anterior.
+
+## 4b. Probar sin ESP32, servo ni sensor
+
+En `config.py`, dejar `ESP32_SIMULACION = True`.
+La cámara sigue siendo real; el ESP32 simulado representa presencia,
+apertura, ausencia y cierre antes del QR.
+Los flags GPIO antiguos no controlan este flujo.
+
+Para un ensayo sin cámara ni QR:
+
 ```bash
-python -c "from servo import ControlServos; import time; s=ControlServos(); s.abrir_compuerta('botella'); time.sleep(1); s.cerrar_compuerta('botella'); s.liberar_todo()"
+python probar_esp32.py
 ```
 
-### HC-SR04
+Para el recorrido con la AI Camera:
+
 ```bash
-python -c "from distance_sensor import SensorDistancia; import time; d=SensorDistancia();
-[print(f'{d.distancia_cm():.1f} cm') or time.sleep(0.5) for _ in range(10)]; d.liberar()"
+python main.py
 ```
 
----
-
-## 4b. Probar SIN servo ni sensor (solo cámara y placa)
-
-Si todavía tenés solo la cámara y la Raspberry, podés correr el ciclo completo (detección → apertura → depósito → QR → cierre) en modo simulación. En `config.py`:
-
-```python
-SERVO_SIMULACION = True     # el servo no se mueve; imprime la señal que enviaría
-SENSOR_SIMULACION = True    # el depósito se confirma solo tras unos segundos
-SENSOR_SIM_SEGUNDOS = 3.0   # cuánto tarda en confirmarse el depósito simulado
-```
-
-Con esto:
-
-- **Servo:** en vez de mover hardware, imprime la confirmación de que mandó la orden:
-  ```
-  [servo] >> SEÑAL ENVIADA al servo 'botella' (GPIO12): ABRIR -> 90 grados
-  ```
-- **Sensor:** en vez de leer el HC-SR04, da por confirmado el depósito automáticamente unos segundos después de abrir la compuerta. Así el flujo avanza y **el QR se genera de verdad** (`qr.png`).
-
-Ninguno de los dos modos necesita que gpiozero esté funcionando, así que el arranque no falla por falta de hardware. Cuando conectes cada pieza, cambiás su flag a `False` y pasa a control real, sin tocar el resto del código.
-
-> Nota: la cámara SÍ tiene que estar conectada — la detección es hardware real (IMX500). Lo que se simula es solo lo que no tenés todavía: servo y sensor.
+Con la placa cargada y configurada, usar `python probar_esp32.py --real`
+para probar un ciclo físico sin IA. Después poner
+`ESP32_SIMULACION = False` para el programa completo.
+No se pasa automáticamente a simulación ante errores de comunicación.
 
 ### Ventana de video en vivo (preview)
 
@@ -213,5 +212,5 @@ El flujo completo queda:
 ```
 best.pt → export imx (cuantización) → packerOut.zip → imx500-package → network.rpk
         → se sube al IMX500 → el sensor infiere → detector.py interpreta
-        → controller.py decide → servo / HC-SR04 / QR
+        → controller.py autoriza → ESP32 controla servo / HC-SR04 → posible depósito → QR
 ```

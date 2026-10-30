@@ -7,7 +7,9 @@ Idea clave: ningún otro archivo debería tener "números mágicos" ni rutas
 hardcodeadas. Si mañana cambiás un pin, el modelo, o un ángulo del servo,
 lo tocás ACÁ y nada más. El resto del código lee desde este módulo.
 
-Todo está en Pi 4 (8GB) + Raspberry Pi AI Camera (IMX500).
+Pi 4 + AI Camera (IMX500) para detección; ESP32 para sensor y compuerta.
+Los parámetros GPIO de las secciones 4 y 5 son del código anterior.
+El flujo nuevo NO los usa: configurar hardware en firmware/esp32_sir/config.h.
 """
 
 # ==========================================================================
@@ -76,6 +78,7 @@ FRAMES_CONSECUTIVOS_REQUERIDOS = 5
 # ==========================================================================
 # 4. SERVOS (compuertas) - GPIO / PWM
 # ==========================================================================
+# LEGADO: servo.py se conserva como referencia, no se carga desde main.py.
 # Numeración BCM (la de gpiozero). Elegí pines que NO choquen con el resto.
 #
 # IMPORTANTE (ver sección de seguridad en la explicación): el servo se
@@ -104,6 +107,8 @@ SERVO_SIMULACION = False
 # ==========================================================================
 # 5. SENSOR HC-SR04 (confirmación de depósito) - GPIO
 # ==========================================================================
+# LEGADO: distance_sensor.py no se carga desde main.py. El sensor está ANTES
+# de la compuerta; presencia -> ausencia permite estimar un posible depósito.
 # ATENCIÓN: el pin ECHO del HC-SR04 entrega 5V y el GPIO de la Pi tolera
 # solo 3.3V. Debe ir un DIVISOR DE TENSIÓN entre ECHO y el GPIO.
 # El código asume que la señal que LLEGA al GPIO ya está adaptada a 3.3V.
@@ -143,7 +148,7 @@ QR_OUTPUT_PATH = "qr.png"          # dónde se guarda el PNG generado
 # Como todavía no hay display físico, display.py trabaja en modo consola
 # y opcionalmente abre una ventana con el QR. Poné False si corrés headless
 # (por SSH sin entorno gráfico) para que no intente abrir ventanas.
-DISPLAY_MOSTRAR_VENTANA_QR = True
+DISPLAY_MOSTRAR_VENTANA_QR = False
 
 # PREVIEW DE LA CÁMARA (ventana con el video en vivo + cajas de detección).
 #   True  -> abre una ventana mostrando lo que ve la cámara, dibujando la
@@ -160,3 +165,36 @@ MOSTRAR_PREVIEW = True
 # Si te da el error "could not load the Qt platform plugin xcb", poné "DRM":
 # esquiva Qt por completo y suele funcionar con monitor por HDMI.
 PREVIEW_MODO = "QTGL"
+
+
+# ==========================================================================
+# 8. ESP32: comunicación y simulación del NUEVO flujo
+# ==========================================================================
+# True simula solo el ESP32; cámara y generación de QR siguen siendo reales.
+# Para usar la placa, cargar el firmware y cambiar a False.
+# No existe fallback automático a simulación si falla la comunicación real.
+ESP32_SIMULACION = False
+ESP32_PUERTO = "/dev/serial0"     # UART GPIO de la Pi, NO USB por defecto
+ESP32_BAUDRATE = 115200           # debe coincidir con config.h del ESP32
+ESP32_TIMEOUT_INICIO = 8.0       # handshake HELLO / READY
+ESP32_INTERVALO_PING = 0.5
+ESP32_TIMEOUT_RESPUESTA = 3.0
+ESP32_TIMEOUT_CICLO = 20.0       # mayor que presencia + paso + movimientos
+PAUSA_ENTRE_CICLOS = 2.0         # pausa temporal, sin comprobar con la cámara
+
+
+# ==========================================================================
+# 9. DISPLAY FISICO ILI9488 (3.5", SPI)
+# ==========================================================================
+# Interfaz SPI0: SCK=GPIO11, MOSI=GPIO10, MISO=GPIO9, CS=GPIO8 (CE0).
+# DC y RESET son GPIO BCM. La pantalla táctil no se inicializa todavía:
+# necesita conocer el controlador y los pines T_CS/T_IRQ/T_CLK/T_DIN/T_DO.
+DISPLAY_HABILITADO = True
+DISPLAY_SPI_PORT = 0
+DISPLAY_SPI_DEVICE = 0
+DISPLAY_SPI_HZ = 16000000
+DISPLAY_DC_PIN = 25
+DISPLAY_RESET_PIN = 17
+DISPLAY_ROTACION = 1          # 1 = orientación vertical para panel 320x480
+DISPLAY_BGR = False
+DISPLAY_QR_SEGUNDOS = 8
