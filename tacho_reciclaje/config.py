@@ -148,7 +148,7 @@ QR_OUTPUT_PATH = "qr.png"          # dónde se guarda el PNG generado
 # Como todavía no hay display físico, display.py trabaja en modo consola
 # y opcionalmente abre una ventana con el QR. Poné False si corrés headless
 # (por SSH sin entorno gráfico) para que no intente abrir ventanas.
-DISPLAY_MOSTRAR_VENTANA_QR = True
+DISPLAY_MOSTRAR_VENTANA_QR = False
 
 # PREVIEW DE LA CÁMARA (ventana con el video en vivo + cajas de detección).
 #   True  -> abre una ventana mostrando lo que ve la cámara, dibujando la
@@ -192,6 +192,7 @@ PAUSA_ENTRE_CICLOS = 2.0         # pausa temporal, sin comprobar con la cámara
 DISPLAY_HABILITADO = True
 DISPLAY_SPI_PORT = 0
 DISPLAY_SPI_DEVICE = 0
+DISPLAY_SPI_HZ = 16000000
 DISPLAY_DC_PIN = 25
 DISPLAY_RESET_PIN = 17
 DISPLAY_ROTACION = 1          # 1 = orientación vertical para panel 320x480
