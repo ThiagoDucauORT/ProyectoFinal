@@ -195,6 +195,6 @@ DISPLAY_SPI_DEVICE = 0
 DISPLAY_SPI_HZ = 16000000
 DISPLAY_DC_PIN = 25
 DISPLAY_RESET_PIN = 17
-DISPLAY_ROTACION = 1          # 1 = orientación vertical para panel 320x480
+DISPLAY_ROTACION = 0          # 0 = orientación horizontal para panel 480x320
 DISPLAY_BGR = False
 DISPLAY_QR_SEGUNDOS = 8
