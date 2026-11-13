@@ -87,11 +87,11 @@ def mostrar_mensaje(texto):
     print(f"[display] {texto}")
     if not _PIL_OK:
         return
-    imagen = Image.new("RGB", (320, 480), "black")
+    imagen = Image.new("RGB", (480, 320), "black")
     dibujo = ImageDraw.Draw(imagen)
     fuente = _fuente(23)
-    margen = 18
-    ancho = 284
+    margen = 24
+    ancho = 432
     palabras = str(texto).split()
     lineas = []
     actual = ""
@@ -105,7 +105,7 @@ def mostrar_mensaje(texto):
             actual = palabra
     if actual:
         lineas.append(actual)
-    y = 45
+    y = 35
     for linea in lineas[:12]:
         dibujo.text((margen, y), linea, font=fuente, fill="white")
         y += 34
@@ -121,18 +121,22 @@ def mostrar_qr(ruta_png):
 
     try:
         qr = Image.open(ruta_png).convert("RGB")
-        # QR grande, cuadrado y con margen blanco para facilitar el escaneo.
-        qr.thumbnail((286, 286), Image.Resampling.NEAREST)
-        imagen = Image.new("RGB", (320, 480), "white")
+        # Composición horizontal 480x320: QR a la izquierda y textos a la derecha.
+        # El margen blanco alrededor del QR ayuda a que la cámara lo detecte.
+        qr.thumbnail((248, 248), Image.Resampling.NEAREST)
+        imagen = Image.new("RGB", (480, 320), "white")
         dibujo = ImageDraw.Draw(imagen)
-        titulo = _fuente(25)
-        subtitulo = _fuente(17)
-        dibujo.text((22, 28), "Deposito confirmado", font=titulo, fill="black")
-        x = (320 - qr.width) // 2
-        y = 88 + (286 - qr.height) // 2
+        titulo = _fuente(24)
+        subtitulo = _fuente(18)
+        x = 18 + (248 - qr.width) // 2
+        y = 36 + (248 - qr.height) // 2
         imagen.paste(qr, (x, y))
-        dibujo.text((35, 397), "Escanea tu codigo QR", font=subtitulo, fill="black")
-        dibujo.text((82, 427), "Gracias por reciclar", font=subtitulo, fill="black")
+        dibujo.text((282, 72), "Deposito", font=titulo, fill="black")
+        dibujo.text((282, 104), "confirmado", font=titulo, fill="black")
+        dibujo.text((282, 166), "Escanea el", font=subtitulo, fill="black")
+        dibujo.text((282, 191), "codigo QR", font=subtitulo, fill="black")
+        dibujo.text((282, 244), "Gracias por", font=subtitulo, fill="black")
+        dibujo.text((282, 268), "reciclar", font=subtitulo, fill="black")
         if not _enviar_imagen(imagen):
             print("[display] No se pudo mostrar el QR en el LCD.")
         else:
