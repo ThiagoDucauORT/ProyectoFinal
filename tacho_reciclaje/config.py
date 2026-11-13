@@ -138,7 +138,7 @@ SENSOR_SIM_SEGUNDOS = 3.0
 # ==========================================================================
 # 6. QR
 # ==========================================================================
-QR_CONTENIDO = "TEST-RECICLAJE"   # contenido de prueba (sin puntos aún)
+QR_CONTENIDO = "SIR001"            # identificador del tacho para vincular con la app
 QR_OUTPUT_PATH = "qr.png"          # dónde se guarda el PNG generado
 
 
