@@ -22,7 +22,6 @@ def main():
         camera.iniciar()
         detector = Detector(camera)
         controller = Controller(camera, detector, esp32, display, qr_module)
-        display.mostrar_mensaje("Sistema listo. Esperando objetos...")
         while True:
             controller.procesar_frame()
             time.sleep(0.01)
