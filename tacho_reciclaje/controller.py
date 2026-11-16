@@ -1,13 +1,8 @@
-"""
-Coordina reconocimiento y QR. El ESP32 controla la secuencia física:
-autorización -> presencia estable -> abrir -> ausencia estable -> cerrar.
-La cámara NO comprueba desaparición. La ausencia indica un POSIBLE depósito.
-"""
+"""Coordina reconocimiento y QR; el ESP32 controla sensor y compuerta."""
 import time
 from enum import Enum, auto
 import config
 from esp32 import ErrorESP32
-
 
 class Estado(Enum):
     ESPERANDO_OBJETO = auto()
@@ -17,45 +12,39 @@ class Estado(Enum):
     MOSTRAR_QR = auto()
     PAUSA = auto()
 
-
 class Controller:
     def __init__(self, camera, detector, esp32, display, qr_module, reloj=None):
-        self.camera = camera
-        self.detector = detector
-        self.esp32 = esp32
-        self.display = display
-        self.qr = qr_module
+        self.camera, self.detector, self.esp32 = camera, detector, esp32
+        self.display, self.qr = display, qr_module
         self._reloj = reloj or time.monotonic
         self.estado = Estado.ESPERANDO_OBJETO
-        self.tipo_objeto_actual = None
-        self.nombre_clase_actual = None
+        self.tipo_objeto_actual = self.nombre_clase_actual = None
         self._frames_validos_seguidos = 0
         self._clase_candidata = None
         self._fin_pausa = 0
         self._qr_en_pantalla = False
         self._fin_qr = 0
+        self.display.mostrar_mensaje("Presentá la botella frente a la cámara para que la reconozca.")
 
     def procesar_frame(self):
-        # Primero Serial; si la cámara bloquea la Pi, el ESP32 limita los tiempos.
         eventos = self.esp32.actualizar()
         if self.estado == Estado.ESPERANDO_OBJETO:
             self._estado_esperando_objeto(self.camera.capturar_metadata())
         elif self.estado == Estado.OBJETO_DETECTADO:
+            self.display.mostrar_mensaje("Botella reconocida. Acercala a la entrada del tacho.")
             self.esp32.autorizar_deposito(self.tipo_objeto_actual)
-            self.display.mostrar_mensaje("Acercá la botella a la entrada.")
             self.estado = Estado.ESPERANDO_DEPOSITO
         elif self.estado == Estado.ESPERANDO_DEPOSITO:
             self._estado_esperando_deposito(eventos)
         elif self.estado == Estado.OBJETO_DEPOSITADO:
+            self.display.mostrar_mensaje("Depósito posible detectado. Preparando tu código QR...")
             try:
                 self._ruta_qr_actual = self.qr.generar_qr()
                 self.estado = Estado.MOSTRAR_QR
             except Exception as error:
-                self.display.mostrar_mensaje(f"ERROR generando QR: {error}")
+                self.display.mostrar_mensaje(f"Error generando QR: {error}")
                 self._terminar_ciclo()
         elif self.estado == Estado.MOSTRAR_QR:
-            # Mostrar el QR sin bloquear el bucle: el ESP32 sigue recibiendo
-            # PING mientras el código permanece visible.
             if not self._qr_en_pantalla:
                 self.display.mostrar_qr(self._ruta_qr_actual)
                 self._qr_en_pantalla = True
@@ -64,8 +53,8 @@ class Controller:
                 self._qr_en_pantalla = False
                 self._terminar_ciclo()
         elif self.estado == Estado.PAUSA and self._reloj() >= self._fin_pausa:
-            self.display.mostrar_mensaje("Listo. Esperando otro objeto.")
             self.estado = Estado.ESPERANDO_OBJETO
+            self.display.mostrar_mensaje("Presentá la botella frente a la cámara para que la reconozca.")
 
     def _estado_esperando_objeto(self, metadata):
         objeto = self.detector.primer_objeto_valido(self.detector.detectar(metadata))
@@ -84,35 +73,39 @@ class Controller:
                 self._terminar_ciclo()
                 return
             self.nombre_clase_actual = objeto.nombre
-            self.display.mostrar_mensaje(f"Botella reconocida (conf {objeto.confianza:.2f}).")
+            self.display.mostrar_mensaje(f"Botella reconocida (confianza {objeto.confianza:.2f}).")
             self.estado = Estado.OBJETO_DETECTADO
 
     def _estado_esperando_deposito(self, eventos):
         mensajes = {
-            "WAIT_PRESENT": "Esperando presencia física en la entrada.",
-            "OPEN": "Presencia detectada. Abriendo compuerta.",
-            "WAIT_CLEAR": "Depositá la botella.",
-            "CLOSED": "Orden de cierre terminada.",
+            "WAIT_PRESENT": "Acercá la botella al sensor de entrada. Esperando presencia...",
+            "OPEN": "Botella detectada en la entrada. Abriendo compuerta...",
+            "WAIT_CLEAR": "Ahora depositá la botella por la compuerta.",
+            "CLOSED": "Compuerta cerrada.",
+        }
+        errores = {
+            "TIMEOUT_PRESENT": "No se detectó la botella a tiempo.",
+            "TIMEOUT_CLEAR": "No se pudo confirmar que la entrada quedara libre.",
+            "ERROR_SENSOR": "Error de lectura del sensor.",
+            "LINK_TIMEOUT": "Se perdió la comunicación con el ESP32.",
+            "CANCELLED": "El ciclo fue cancelado.",
         }
         for evento in eventos:
             if evento in mensajes:
                 self.display.mostrar_mensaje(mensajes[evento])
             elif evento == "DEPOSIT_POSSIBLE":
-                self.display.mostrar_mensaje("Posible depósito detectado; compuerta cerrada.")
+                self.display.mostrar_mensaje("Posible depósito detectado. Compuerta cerrada.")
                 self.estado = Estado.OBJETO_DEPOSITADO
-            elif evento in {"TIMEOUT_PRESENT", "TIMEOUT_CLEAR", "ERROR_SENSOR",
-                            "LINK_TIMEOUT", "CANCELLED"}:
-                self.display.mostrar_mensaje(f"Ciclo cancelado: {evento}. No se genera QR.")
+            elif evento in errores:
+                self.display.mostrar_mensaje(f"{errores[evento]} No se genera QR.")
                 self._terminar_ciclo()
             elif evento == "ERROR_BUSY":
                 raise ErrorESP32("El ESP32 está ocupado; reiniciá el programa.")
 
     def _terminar_ciclo(self):
         self._qr_en_pantalla = False
-        self.tipo_objeto_actual = None
-        self.nombre_clase_actual = None
+        self.tipo_objeto_actual = self.nombre_clase_actual = None
         self._clase_candidata = None
         self._frames_validos_seguidos = 0
-        # Pausa por tiempo, sin exigir desaparición en frames de cámara.
         self._fin_pausa = self._reloj() + config.PAUSA_ENTRE_CICLOS
         self.estado = Estado.PAUSA
