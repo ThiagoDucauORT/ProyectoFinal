@@ -83,32 +83,64 @@ def _enviar_imagen(imagen):
 
 
 def mostrar_mensaje(texto):
-    """Muestra el mensaje por consola y en el LCD si está disponible."""
+    """Muestra mensajes centrados y con ajuste automático en el LCD."""
     print(f"[display] {texto}")
     if not _PIL_OK:
         return
-    imagen = Image.new("RGB", (480, 320), "black")
+
+    ancho_pantalla, alto_pantalla = 480, 320
+    imagen = Image.new("RGB", (ancho_pantalla, alto_pantalla), (12, 20, 32))
     dibujo = ImageDraw.Draw(imagen)
-    fuente = _fuente(23)
-    margen = 24
-    ancho = 432
+
+    # Marco discreto para dar una apariencia más cuidada sin distraer.
+    dibujo.rounded_rectangle(
+        (10, 10, ancho_pantalla - 11, alto_pantalla - 11),
+        radius=14,
+        outline=(35, 105, 125),
+        width=2,
+    )
+    dibujo.rounded_rectangle(
+        (22, 22, ancho_pantalla - 23, 28),
+        radius=3,
+        fill=(35, 190, 190),
+    )
+
+    margen = 34
+    ancho_texto = ancho_pantalla - 2 * margen
     palabras = str(texto).split()
+
+    # Reducir la fuente si el mensaje necesita muchas líneas.
     lineas = []
-    actual = ""
-    for palabra in palabras:
-        prueba = f"{actual} {palabra}".strip()
-        if dibujo.textbbox((0, 0), prueba, font=fuente)[2] <= ancho:
-            actual = prueba
-        else:
-            if actual:
-                lineas.append(actual)
-            actual = palabra
-    if actual:
-        lineas.append(actual)
-    y = 35
-    for linea in lineas[:12]:
-        dibujo.text((margen, y), linea, font=fuente, fill="white")
-        y += 34
+    fuente = _fuente(25)
+    for tamano in (25, 23, 21, 19):
+        fuente = _fuente(tamano)
+        lineas = []
+        actual = ""
+        for palabra in palabras:
+            prueba = f"{actual} {palabra}".strip()
+            if dibujo.textbbox((0, 0), prueba, font=fuente)[2] <= ancho_texto:
+                actual = prueba
+            else:
+                if actual:
+                    lineas.append(actual)
+                # Evita que una palabra excepcionalmente larga desborde.
+                actual = palabra
+        if actual:
+            lineas.append(actual)
+        if len(lineas) <= 7:
+            break
+
+    alto_linea = fuente.getbbox("Ag")[3] - fuente.getbbox("Ag")[1] + 12
+    alto_total = len(lineas) * alto_linea
+    y = max(48, (alto_pantalla - alto_total) // 2 + 8)
+
+    for linea in lineas:
+        caja = dibujo.textbbox((0, 0), linea, font=fuente)
+        ancho_linea = caja[2] - caja[0]
+        x = (ancho_pantalla - ancho_linea) // 2 - caja[0]
+        dibujo.text((x, y), linea, font=fuente, fill=(245, 248, 250))
+        y += alto_linea
+
     _enviar_imagen(imagen)
 
 
