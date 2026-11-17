@@ -12,7 +12,8 @@ constexpr int ANGULO_ABIERTO = 90;
 constexpr int SERVO_MIN_US = 1000;
 constexpr int SERVO_MAX_US = 2000;
 constexpr float PRESENCIA_CM = 6.0f;
-constexpr float AUSENCIA_CM = 20.0f;
+// Umbral inicial: pared de referencia a ~10 cm; validar con lecturas reales.
+constexpr float AUSENCIA_CM = 8.0f;
 constexpr unsigned MUESTRAS_ESTABLES = 3;
 constexpr unsigned ERRORES_SENSOR_MAX = 5;
 constexpr uint32_t MUESTREO_MS = 70;
