@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pio/
+build/
+tacho_reciclaje/qr.png

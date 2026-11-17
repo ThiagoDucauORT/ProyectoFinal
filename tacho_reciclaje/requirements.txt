@@ -8,8 +8,12 @@
 
 qrcode[pil]      # generación de QR (arrastra Pillow)
 numpy            # manejo de los tensores de salida del IMX500
+pyserial>=3.5,<4  # Raspberry <-> ESP32 por UART
 
 # opencv-python es OPCIONAL: solo para la ventana de prueba del QR.
 # Si vas a correr headless (SSH sin entorno gráfico), podés no instalarlo
 # y poner DISPLAY_MOSTRAR_VENTANA_QR = False en config.py.
 opencv-python
+
+# Driver SPI para el display ILI9488 de 3.5 pulgadas.
+luma.lcd>=2.11,<3

@@ -25,6 +25,8 @@ Qué corre dónde:
 
 import sys
 
+from libcamera import Transform
+
 # Estas importaciones vienen del paquete del sistema python3-picamera2.
 # En SSH sin la cámara conectada fallarían; por eso las envolvemos para dar
 # un mensaje de error claro (manejo de errores, sección 17).
@@ -107,6 +109,7 @@ class Camera:
         # margen para no perder frames. FrameRate sale del intrinsics para
         # que coincida con la tasa de inferencia real del modelo.
         config_cam = self.picam2.create_preview_configuration(
+            transform=Transform(hflip=True, vflip=True),  # rotación de 180°
             controls={"FrameRate": self.intrinsics.inference_rate},
             buffer_count=12,
         )
