@@ -8,7 +8,8 @@ constexpr int TRIGGER_PIN = 27;
 constexpr int ECHO_PIN = 26;  // ECHO adaptado a 3.3 V
 constexpr uint32_t BAUDRATE = 115200;
 constexpr int ANGULO_CERRADO = 0;
-constexpr int ANGULO_ABIERTO = 90;
+// MG90S: recorrido inicial ampliado; validar topes mecánicos antes de uso continuo.
+constexpr int ANGULO_ABIERTO = 150;
 constexpr int SERVO_MIN_US = 1000;
 constexpr int SERVO_MAX_US = 2000;
 constexpr float PRESENCIA_CM = 6.0f;
